@@ -270,17 +270,39 @@ void TensorImpl::throw_storage_access_error() const {
   TORCH_CHECK_NOT_IMPLEMENTED(false, "Cannot access storage of ", tensorimpl_type_name());
 }
 
-bool TensorImpl::is_contiguous(at::MemoryFormat memory_format) const {
-#ifdef DEBUG
-  AT_ASSERT(compute_contiguous() == is_contiguous_);
-#endif
-  if (memory_format == at::MemoryFormat::ChannelsLast) {
-      return is_channels_last_contiguous_;
+bool TensorImpl::is_contiguous_customized(at::MemoryFormat memoryFormat) const {
+  switch (is_contiguous_policy_) {
+    case IsContiguousPolicy::AlwaysThrow:
+      throw_is_contiguous_not_allowed_error();
+    case IsContiguousPolicy::ThrowUnlessContiguousMemoryFormat:
+      if (memoryFormat == MemoryFormat::Contiguous) {
+        return is_contiguous_;
+      }
+      throw_is_contiguous_in_other_formats_not_allowed_error();
+    case IsContiguousPolicy::ForceContiguous:
+      return memoryFormat == MemoryFormat::Contiguous;
+    case IsContiguousPolicy::DefaultBehavior:
+      TORCH_INTERNAL_ASSERT(
+          false, "is_contiguous_customized somehow called with default behavior policy!");
   }
-  else if (memory_format == at::MemoryFormat::ChannelsLast3d) {
-      return is_channels_last_3d_contiguous_;
+}
+
+void TensorImpl::throw_is_contiguous_not_allowed_error() const {
+  TORCH_CHECK_NOT_IMPLEMENTED(
+      false, "Tensors of type ", tensorimpl_type_name(),
+      " do not have is_contiguous");
+}
+
+void TensorImpl::throw_is_contiguous_in_other_formats_not_allowed_error() const {
+  // HACK: Preserve vmap error text for BatchedTensorImpl.
+  if (!strcmp(tensorimpl_type_name(), "BatchedTensorImpl")) {
+    TORCH_CHECK_NOT_IMPLEMENTED(
+        false, "NYI: querying is_contiguous inside of vmap for memory_format other "
+        "than torch.contiguous_format");
   }
-  return is_contiguous_;
+  TORCH_CHECK_NOT_IMPLEMENTED(
+      false, "Tensors of type ", tensorimpl_type_name(),
+      " only allow is_contiguous() with torch.contiguous_format");
 }
 
 static void deletePlacementDeleteContext(void* ptr) {
