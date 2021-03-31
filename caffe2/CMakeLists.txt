@@ -554,6 +554,14 @@ if(NOT INTERN_BUILD_MOBILE OR NOT BUILD_CAFFE2_MOBILE)
        ${TORCH_SRC_DIR}/csrc/jit/mobile/optim/sgd.cpp
        ${TORCH_SRC_DIR}/csrc/jit/mobile/sequential.cpp
        )
+    if(USE_SOURCE_DEBUG_ON_MOBILE)
+      set(MOBILE_EAGER_SYMOBLICATION_SRCS
+         ${TORCH_SRC_DIR}/csrc/jit/mobile/debug_info.cpp
+         ${TORCH_SRC_DIR}/csrc/jit/serialization/source_range_serialization.cpp
+         ${TORCH_SRC_DIR}/csrc/jit/frontend/source_range.cpp
+         )
+      list(APPEND MOBILE_SRCS ${MOBILE_EAGER_SYMOBLICATION_SRCS})
+    endif()
     list(APPEND TORCH_SRCS ${MOBILE_SRCS})
   endif()
 
