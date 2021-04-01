@@ -171,6 +171,7 @@ class OpInfo(object):
                  gradcheck_wrapper=lambda op, *args, **kwargs: op(*args, **kwargs),  # wrapper function for gradcheck
                  check_batched_grad=True,  # check batched grad when doing gradcheck
                  check_batched_gradgrad=True,  # check batched grad grad when doing gradgradcheck
+                 fast_gradcheck=True,  # enable fast_mode=True when doing gradcheck and gradgradcheck
                  ):
 
         # Validates the dtypes are generated from the dispatch-related functions
@@ -220,6 +221,7 @@ class OpInfo(object):
         self.gradcheck_wrapper = gradcheck_wrapper
         self.check_batched_grad = check_batched_grad
         self.check_batched_gradgrad = check_batched_gradgrad
+        self.fast_gradcheck = fast_gradcheck
 
         self.supports_sparse = supports_sparse
 
@@ -2529,15 +2531,18 @@ op_db: List[OpInfo] = [
                SkipInfo('TestCommon', 'test_out',
                         dtypes=[torch.float32]),
            ),
-           sample_inputs_func=sample_inputs_cumprod),
+           sample_inputs_func=sample_inputs_cumprod,
+           fast_gradcheck=False),
     OpInfo('cummax',
            dtypesIfCPU=all_types_and(torch.bool),
            dtypesIfCUDA=all_types_and(torch.bool, torch.half),
-           sample_inputs_func=partial(sample_inputs_cumulative_ops, supports_dtype_kwargs=False)),
+           sample_inputs_func=partial(sample_inputs_cumulative_ops, supports_dtype_kwargs=False),
+           fast_gradcheck=False),
     OpInfo('cummin',
            dtypesIfCPU=all_types_and(torch.bool),
            dtypesIfCUDA=all_types_and(torch.bool, torch.half),
-           sample_inputs_func=partial(sample_inputs_cumulative_ops, supports_dtype_kwargs=False)),
+           sample_inputs_func=partial(sample_inputs_cumulative_ops, supports_dtype_kwargs=False),
+           fast_gradcheck=False),
     UnaryUfuncInfo('deg2rad',
                    ref=np.radians,
                    decorators=(precisionOverride({torch.bfloat16: 7e-1,
